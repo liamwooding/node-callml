@@ -102,15 +102,16 @@ function handleSoapResponse(method, outputModel, startTime, err, body, callback)
   return callback(null, obj);
 };
 
-function doSoapRequest(url, method, soapAction, data, inputModel, outputModel, ns, callback) {
+function doSoapRequest(url, method, soapAction, soapHeader, data, inputModel, outputModel, ns, callback) {
   if (!data.validate()) return callback("Input model failed to validate!");
   var headers = {
-    'Content-Type': 'application/soap+xml; charset=utf-8',
+    //'Content-Type': 'application/soap+xml; charset=utf-8',
+    // CallML servers don't accept the usual SOAP 1.2 content type
+    'Content-Type': 'text/xml; charset=utf-8',
     'SOAPAction': '"'+soapAction+'"'
   };
   
   var startTime;
-  var soapHeader = data.soapHeader()
   var soapBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
                    (soapHeader ? '<soap:Header>' + soapHeader + '</soap:Header>' : '') +
                    '<soap:Body>' +
@@ -183,13 +184,30 @@ function SoapService() {
         (function createFunction(functionName, properties) {
           parent[properties.input.replace("Element", "")] = function(json) {
             var newObject = new models[properties.input](json, this);
+            this.serviceUrl = function () {
+              return url
+            };
+            Object.defineProperty(this, "serviceUrl", { enumerable: false });
+            this.namespace = function () {
+              return namespace
+            };
+            Object.defineProperty(this, "namespace", { enumerable: false });
             this.soapHeader = function () {
               return '';
             };
             Object.defineProperty(this, "soapHeader", { enumerable: false });
             this.request = function(callback) {
-              doSoapRequest(url, functionName, properties.soapAction, this, 
-                          properties.input, properties.output, namespace, callback);
+              doSoapRequest(
+                this.serviceUrl(),
+                functionName,
+                properties.soapAction,
+                this.soapHeader(),
+                this, 
+                properties.input,
+                properties.output,
+                this.namespace(),
+                callback
+              );
             };
             Object.defineProperty(this, "request", { enumerable: false });
             this.preview = function() {

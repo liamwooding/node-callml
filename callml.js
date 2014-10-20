@@ -3,14 +3,15 @@ var assert = require('assert')
 
 function CallMLService (config) {
   if (!(this instanceof CallMLService)) return new CallMLService(config)
-  assert(config, 'Missing service configuration: company, username, password')
+  assert(config, 'Missing service configuration: url, company, username, password')
+  assert(config.url, 'Missing service configuration: url')
   assert(config.company, 'Missing service configuration: company')
   assert(config.username, 'Missing service configuration: username')
   assert(config.password, 'Missing service configuration: password')
   this.config = config
 }
 
-CallMLService.prototype._addAuthHeader = function (req) {
+CallMLService.prototype._setAuthHeader = function (req) {
   var config = this.config
   var soapHeader = req.soapHeader
 
@@ -24,6 +25,13 @@ CallMLService.prototype._addAuthHeader = function (req) {
   }
 }
 
+CallMLService.prototype._setServiceUrl = function (req) {
+  var url = this.config.url
+  req.serviceUrl = function () {
+    return url
+  }
+}
+
 CallMLService.prototype.search = function (user, opts, cb) {
   if (!cb) {
     cb = opts
@@ -34,7 +42,8 @@ CallMLService.prototype.search = function (user, opts, cb) {
 
   var searchRequest = new WSDLCallMLService.CallML6Soap.Search06b()
 
-  this._addAuthHeader(searchRequest)
+  this._setServiceUrl(searchRequest)
+  this._setAuthHeader(searchRequest)
 
   var searchDefinition = new WSDLCallMLService.Types.callmlsearch6_1()
   var parameters = new WSDLCallMLService.Types.CallMLParameters6()
@@ -49,24 +58,25 @@ CallMLService.prototype.search = function (user, opts, cb) {
 
   var address = new WSDLCallMLService.Types.address()
 
-  address.premiseno = '1'
+  address.premiseno = 1
   address.premisename = ''
   address.postcode = 'X99LF'
   // This is in the short address format
   //var InputAddresstype = new WSDLCallMLService.Types.inputaddresstype()
-  address.addressType = 'short'
+  address.addresstype = 'short'
   applicant.currentaddress = address
+  applicant.dateofbirth = '1910-01-01'
 
-  primarySearch.minChecks = '2'
+  primarySearch.minchecks = 2
 
   //var Searchpurpose = new WSDLCallMLService.Types.searchpurpose
-  primarySearch.searchPurpose = 'MP'
-  primarySearch.settledAccountMonths = '12'
+  primarySearch.searchpurpose = 'MP'
+  primarySearch.settledaccountmonths = 12
   primarySearch.usebai = true
   primarySearch.useccj = true
   primarySearch.usesettledaccounts = true
   primarySearch.useukinvestors = true
-  primarySearch.searchDirectors = true
+  primarySearch.searchdirectors = true
 
   primarySearch.applicant = applicant
 
@@ -74,9 +84,8 @@ CallMLService.prototype.search = function (user, opts, cb) {
   searchDefinition.parameters = parameters
   searchRequest.searchDefinition = searchDefinition
 
-  if (opts.debugSoap) {
-    WSDLCallMLService.Settings.debugSoap = true
-  }
+  WSDLCallMLService.Settings.debugSoap = opts.debugSoap || false
+  WSDLCallMLService.Settings.benchmark = opts.benchmark || false
 
   searchRequest.request(function (err, response) {
     cb(err, response)

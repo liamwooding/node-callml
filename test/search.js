@@ -21,13 +21,6 @@ test('Test Julia Audi passes', function (t) {
   address.addressType = 'short'
   applicant.currentaddress = address
 
-  var config = {
-    url: '',
-    company: '',
-    username: '',
-    password: ''
-  }
-
   t.plan(2)
 
   service.search(applicant, {debugSoap: true}, function (err, response) {
