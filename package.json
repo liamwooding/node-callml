@@ -1,0 +1,16 @@
+{
+  "name": "callml",
+  "version": "6.1.1",
+  "description": "",
+  "main": "callml.js",
+  "scripts": {
+    "test": "tape test/*.js",
+    "coverage": "istanbul cover node_modules/tape/bin/tape test/*.js"
+  },
+  "author": "Liam Wooding",
+  "license": "ISC",
+  "devDependencies": {
+    "istanbul": "^0.3.2",
+    "tape": "^3.0.1"
+  }
+}
