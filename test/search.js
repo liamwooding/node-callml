@@ -1,8 +1,13 @@
 var test = require('tape')
-var CallML6 = require('../')
+var CallMLService = require('../')
+var fs = require('fs')
+var config = JSON.parse(fs.readFileSync(__dirname + '/../.callmlrc', 'utf8'))
 
-test('Test Julia Audi passes', function(t) {
+var service = new CallMLService(config)
+
+test('Test Julia Audi passes', function (t) {
   var applicant = {}
+
   var name = {}
   name.title = 'Miss'
   name.forename = 'Julia'
@@ -16,12 +21,18 @@ test('Test Julia Audi passes', function(t) {
   address.addressType = 'short'
   applicant.currentaddress = address
 
+  var config = {
+    url: '',
+    company: '',
+    username: '',
+    password: ''
+  }
+
   t.plan(2)
 
-  CallML6(applicant, function (err, response) {
+  service.search(applicant, {debugSoap: true}, function (err, response) {
     t.error(err, 'No error when searching')
     t.ok(response, 'Response was not null')
-  
     t.end()
   })
 })

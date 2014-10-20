@@ -12,5 +12,9 @@
   "devDependencies": {
     "istanbul": "^0.3.2",
     "tape": "^3.0.1"
+  },
+  "dependencies": {
+    "request": "^2.45.0",
+    "xml2json": "^0.5.1"
   }
 }

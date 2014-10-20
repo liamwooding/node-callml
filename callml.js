@@ -1,33 +1,65 @@
-var CallML6Service = require('./callml6')
+var WSDLCallMLService = require('./callml6')
+var assert = require('assert')
 
-module.exports = function search (user, credentials, cb) {
+function CallMLService (config) {
+  if (!(this instanceof CallMLService)) return new CallMLService(config)
+  assert(config, 'Missing service configuration: company, username, password')
+  assert(config.company, 'Missing service configuration: company')
+  assert(config.username, 'Missing service configuration: username')
+  assert(config.password, 'Missing service configuration: password')
+  this.config = config
+}
 
-  var searchRequest = new CallML6Service.CallML6Soap.Search06b()
-  var searchDefinition = new CallML6Service.Types.callmlsearch6_1()
-  var parameters = new CallML6Service.Types.CallMLParameters6()
-  var primarySearch = new CallML6Service.Types.mlprimarysearch()
+CallMLService.prototype._addAuthHeader = function (req) {
+  var config = this.config
+  var soapHeader = req.soapHeader
 
-  // Add applicant
-  var applicant = new CallML6Service.Types.applicant()
-  var name = new CallML6Service.Types.name()
+  req.soapHeader =  function () {
+    return soapHeader() +
+      '<callcreditheaders xmlns="urn:callcredit.co.uk/soap:callcreditapi">' +
+        '<company>' + config.company + '</company>' +
+        '<username>' + config.username + '</username>' +
+        '<password>' + config.password + '</password>' +
+      '</callcreditheaders>'
+  }
+}
+
+CallMLService.prototype.search = function (user, opts, cb) {
+  if (!cb) {
+    cb = opts
+    opts = {}
+  }
+
+  opts = opts || {}
+
+  var searchRequest = new WSDLCallMLService.CallML6Soap.Search06b()
+
+  this._addAuthHeader(searchRequest)
+
+  var searchDefinition = new WSDLCallMLService.Types.callmlsearch6_1()
+  var parameters = new WSDLCallMLService.Types.CallMLParameters6()
+  var primarySearch = new WSDLCallMLService.Types.mlprimarysearch()
+
+  var applicant = new WSDLCallMLService.Types.applicant()
+  var name = new WSDLCallMLService.Types.name()
   name.title = 'Miss'
   name.forename = 'Julia'
   name.surname = 'Audi'
   applicant.name = name
-  // Add address
-  var address = new CallML6Service.Types.address()
+
+  var address = new WSDLCallMLService.Types.address()
 
   address.premiseno = '1'
   address.premisename = ''
   address.postcode = 'X99LF'
   // This is in the short address format
-  //var InputAddresstype = new CallML6Service.Types.inputaddresstype()
+  //var InputAddresstype = new WSDLCallMLService.Types.inputaddresstype()
   address.addressType = 'short'
   applicant.currentaddress = address
 
   primarySearch.minChecks = '2'
 
-  //var Searchpurpose = new CallML6Service.Types.searchpurpose
+  //var Searchpurpose = new WSDLCallMLService.Types.searchpurpose
   primarySearch.searchPurpose = 'MP'
   primarySearch.settledAccountMonths = '12'
   primarySearch.usebai = true
@@ -42,13 +74,13 @@ module.exports = function search (user, credentials, cb) {
   searchDefinition.parameters = parameters
   searchRequest.searchDefinition = searchDefinition
 
-  CallML6Service.Settings.debugSoap = true
+  if (opts.debugSoap) {
+    WSDLCallMLService.Settings.debugSoap = true
+  }
 
-  // Got all the data ready -> send request and get response
-  searchRequest.request(function(err, response) {
-
-    cb (err, response)
-    // console.error(err)
-    // console.log(response)
+  searchRequest.request(function (err, response) {
+    cb(err, response)
   })
 }
+
+module.exports = CallMLService

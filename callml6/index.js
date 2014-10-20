@@ -110,7 +110,9 @@ function doSoapRequest(url, method, soapAction, data, inputModel, outputModel, n
   };
   
   var startTime;
+  var soapHeader = data.soapHeader()
   var soapBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' +
+                   (soapHeader ? '<soap:Header>' + soapHeader + '</soap:Header>' : '') +
                    '<soap:Body>' +
                      '<'+method+' xmlns="'+ns+'">'+
                        jsonToXml(data) +
@@ -181,6 +183,10 @@ function SoapService() {
         (function createFunction(functionName, properties) {
           parent[properties.input.replace("Element", "")] = function(json) {
             var newObject = new models[properties.input](json, this);
+            this.soapHeader = function () {
+              return '';
+            };
+            Object.defineProperty(this, "soapHeader", { enumerable: false });
             this.request = function(callback) {
               doSoapRequest(url, functionName, properties.soapAction, this, 
                           properties.input, properties.output, namespace, callback);
